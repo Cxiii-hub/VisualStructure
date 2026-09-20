@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recycled Umbrella</title>
+    <style>
+        * {box-sizing: border-box;margin:0;padding:0;font-family:Arial, sans-serif;}
+        body {max-width:700px;margin:30px auto;padding:0 20px;text-align:center;}
+        img {width:100%;max-width:600px;border-radius:8px;margin:20px 0;}
+        h1 {font-size:28px;color:#222;}
+        .cta-btn {display:inline-block;padding:14px 28px;background:#226644;color:white;text-decoration:none;border-radius:6px;font-size:18px;margin-top:15px;}
+    </style>
+</head>
+<body>
+    <h1 id="ad-title">Recycled Umbrella from Plastic Bottles</h1>
+    <img id="ad-img" alt="ad stimulus">
+    <p style="margin:16px 0;">Please review the advertisement, then click below to continue to the survey.</p>
+    <a id="goSurvey" class="cta-btn">Continue to Survey</a>
+
+<script>
+//读取url cond参数
+const params = new URLSearchParams(window.location.search);
+const cond = params.get("cond") || "default";
+
+//根据cond切换广告图片
+const imgEl = document.getElementById("ad-img");
+if(cond === "Fusion"){
+    imgEl.src = "img/ad_fusion.png";
+}else if(cond === "Juxtapose"){
+    imgEl.src = "img/ad_juxtapose.png";
+}else{
+    imgEl.src = "img/ad_fusion.png";
+}
+
+// 👉后面这里替换成你的Qualtrics问卷链接
+const qualtricsBase = "https://xxxx.qualtrics.com/s/xxxx";
+document.getElementById("goSurvey").onclick = function(){
+    //把cond传给Qualtrics，问卷里捕获组别
+    window.location.href = `${qualtricsBase}?cond=${cond}`;
+}
+</script>
+</body>
+</html>
