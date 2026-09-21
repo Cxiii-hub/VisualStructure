@@ -319,84 +319,104 @@
   </div>
 </footer>
 <script>
-// 全局只生成一次SESSION_ID，着陆、表单提交共用
+// ===== 基础参数 =====
 const params = new URLSearchParams(window.location.search);
 const cond = params.get("cond");
-const SESSION_ID =
-  crypto.randomUUID
-    ? crypto.randomUUID()
-    : Date.now().toString(36) + Math.random().toString(36).slice(2);
-const APPS_SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbw9nRJL5FZgdSU0lo55x_HOs_8KiDTVVBfmnqk8SzaBkW5SapBRHsAV5mQPPEUrTUQ/exec";
+const utm_source = params.get("utm_source") || "";
+const utm_campaign = params.get("utm_campaign") || "";
+const utm_content = params.get("utm_content") || "";
+const fbclid = params.get("fbclid") || "";
+const SESSION_ID = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36)+Math.random().toString(36).slice(2);
+// ✅ 已经粘贴你的新Web App地址
+const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxDfchjNxzChRAA4QU47mm500z7q8-8FWFa9RgpzB9543viug2cLtQVotCT82cFXj0/exec";
 
-// 页面打开：着陆记录 email_submit=0
-function sendLandingTest() {
-  const data = {
-    session_id: SESSION_ID,
-    condition: cond,
-    landing_time: new Date().toISOString(),
-    device_type: /Mobi|Android/i.test(navigator.userAgent)
-      ? "Mobile"
-      : "Desktop",
-    browser: navigator.userAgent,
-    language: navigator.language,
-    email_submit: 0,
-    email: ""
-  };
-  console.log("【着陆上报，准备发送】", data);
-  fetch(APPS_SCRIPT_URL, {
-    method: "POST",
-    mode: "no-cors",
-    body: JSON.stringify(data)
-  });
+// ===== 设备信息 =====
+function getOS(){
+  const ua = navigator.userAgent;
+  if(/Mac OS X/i.test(ua)) return "macOS";
+  if(/Windows/i.test(ua)) return "Windows";
+  if(/Android/i.test(ua)) return "Android";
+  if(/iPhone|iPad|iPod/i.test(ua)) return "iOS";
+  if(/Linux/i.test(ua)) return "Linux";
+  return "Unknown";
 }
-sendLandingTest();
+const OS = getOS();
+const screen_width = window.screen.width || 0;
+const viewport_width = window.innerWidth || document.documentElement.clientWidth || 0;
 
-// 表单提交：email_submit=1，复用同一个SESSION_ID
-document.getElementById("emailForm").addEventListener("submit", function(e){
-  e.preventDefault();
-  const email = document.getElementById("email").value.trim();
-  if(!email) return;
-  const data = {
-    session_id: SESSION_ID,
-    condition: cond,
-    landing_time: new Date().toISOString(),
-    device_type: /Mobi|Android/i.test(navigator.userAgent)
-      ? "Mobile"
-      : "Desktop",
-    browser: navigator.userAgent,
-    language: navigator.language,
-    email_submit: 1,
+// ===== 地理位置（IP定位 + 时区回退）=====
+let geo = { country:"", region:"" };
+(function getGeo(){
+  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
+  geo.region = (tz.split("/")[1] || tz).replace(/_/g," ");
+  fetch("https://ipapi.co/json/")
+    .then(r=>r.json())
+    .then(d=>{ if(d && d.country_name){ geo.country=d.country_name; geo.region=d.region||geo.region; } })
+    .catch(()=>{});
+})();
+
+// ===== 行为追踪：活跃时长 & 滚动深度 =====
+let active_seconds = 0;
+let max_scroll_pct = 0;
+let visible = true;
+document.addEventListener("visibilitychange", ()=>{ visible = !document.hidden; });
+setInterval(()=>{ if(visible) active_seconds++; }, 1000);
+window.addEventListener("scroll", ()=>{
+  const doc = document.documentElement;
+  const total = doc.scrollHeight - doc.clientHeight;
+  if(total > 0){
+    const pct = Math.round((window.scrollY / total) * 100);
+    max_scroll_pct = Math.max(max_scroll_pct, pct);
+  }
+});
+
+// ===== 邮箱聚焦时间 =====
+let emailFocusTime = null;
+const emailInput = document.getElementById("email");
+emailInput.addEventListener("focus", ()=>{ if(emailFocusTime===null) emailFocusTime = Date.now(); });
+
+// ===== 组装数据 & 上报 =====
+function buildData(email_submit, email){
+  return {
+    session_id: SESSION_ID, condition: cond, landing_time: new Date().toISOString(),
+    device_type: /Mobi|Android/i.test(navigator.userAgent) ? "Mobile" : "Desktop",
+    OS: OS, browser: navigator.userAgent, language: navigator.language,
+    country: geo.country, region: geo.region,
+    screen_width: screen_width, viewport_width: viewport_width,
+    utm_source: utm_source, utm_campaign: utm_campaign, utm_content: utm_content, fbclid: fbclid,
+    active_seconds: active_seconds, max_scroll_pct: max_scroll_pct,
+    email_focus: emailFocusTime !== null ? 1 : 0,
+    email_submit: email_submit,
+    email_submit_seconds: emailFocusTime ? Math.round((Date.now()-emailFocusTime)/1000) : "",
     email: email
   };
-  console.log("【表单提交，准备发送】", data);
-  fetch(APPS_SCRIPT_URL, {
-    method: "POST",
-    mode: "no-cors",
-    body: JSON.stringify(data)
-  });
+}
+
+// ===== 着陆上报（email_submit=0），延迟2秒等IP定位 =====
+setTimeout(()=>{
+  const data = buildData(0, "");
+  console.log("【着陆上报】", data);
+  fetch(APPS_SCRIPT_URL, {method:"POST", mode:"no-cors", body: JSON.stringify(data)});
+}, 2000);
+
+// ===== 表单提交（email_submit=1）=====
+document.getElementById("emailForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  const email = emailInput.value.trim();
+  if(!email) return;
+  const data = buildData(1, email);
+  console.log("【表单提交】", data);
+  fetch(APPS_SCRIPT_URL, {method:"POST", mode:"no-cors", body: JSON.stringify(data)});
   document.getElementById("status").textContent = "Thanks — we'll keep you posted.";
   this.reset();
 });
 
-// ============ 等待DOM加载完成，再执行图片切换 ============
-document.addEventListener('DOMContentLoaded', function(){
-  const imgEl = document.getElementById("adImage");
-  console.log("图片分支，当前cond：", cond);
-  if (cond === "Fusion") {
-    imgEl.src = "img/ad_fusion.png";
-    console.log("加载Fusion图");
-  } else if (cond === "Juxtapose") {
-    imgEl.src = "img/ad_juxtapose.png";
-    console.log("加载Juxtapose图");
-  } else if (cond === "Control") {
-    imgEl.src = "img/ad_control.png";
-    console.log("加载Control图");
-  } else {
-    imgEl.src = "umbrella-product.png";
-    console.log("加载默认图");
-  }
-})
+// ===== 图片切换 =====
+const imgEl = document.getElementById("adImage");
+if (cond === "Fusion") imgEl.src = "img/ad_fusion.png";
+else if (cond === "Juxtapose") imgEl.src = "img/ad_juxtapose.png";
+else if (cond === "Control") imgEl.src = "img/ad_control.png";
+else imgEl.src = "umbrella-product.png";
 </script>
 
 </body>
