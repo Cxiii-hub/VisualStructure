@@ -344,6 +344,7 @@ function sendLandingTest() {
     email_submit: 0,
     email: ""
   };
+  console.log("【着陆上报，准备发送】", data);
   fetch(APPS_SCRIPT_URL, {
     method: "POST",
     mode: "no-cors",
@@ -370,6 +371,7 @@ document.getElementById("emailForm").addEventListener("submit", function(e){
     email_submit: 1,
     email: email
   };
+  console.log("【表单提交，准备发送】", data);
   fetch(APPS_SCRIPT_URL, {
     method: "POST",
     mode: "no-cors",
@@ -380,7 +382,8 @@ document.getElementById("emailForm").addEventListener("submit", function(e){
   this.reset();
 });
 
-// 条件图片切换
+// ============ 注释图片切换，消除JS报错，等图片就绪再启用 ============
+/*
 if (cond === "Fusion") {
   imgEl.src = "img/ad_fusion.png";
 } else if (cond === "Juxtapose") {
@@ -390,6 +393,7 @@ if (cond === "Fusion") {
 } else {
   imgEl.src = "umbrella-product.png";
 }
+*/
 </script>
 </body>
 </html>
