@@ -332,6 +332,37 @@ const params = new URLSearchParams(window.location.search);
 const cond = params.get("cond") || "default";
 const imgEl = document.getElementById("adImage");
 
+const SESSION_ID =
+  crypto.randomUUID
+    ? crypto.randomUUID()
+    : Date.now().toString(36) + Math.random().toString(36).slice(2);
+
+const APPS_SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycbw9nRJL5FZgdSU0lo55x_HOs_8KiDTVVBfmnqk8SzaBkW5SapBRHsAV5mQPPEUrTUQ/exec";
+
+function sendLandingTest() {
+  const data = {
+    session_id: SESSION_ID,
+    condition: cond,
+    landing_time: new Date().toISOString(),
+    device_type: /Mobi|Android/i.test(navigator.userAgent)
+      ? "Mobile"
+      : "Desktop",
+    browser: navigator.userAgent,
+    language: navigator.language,
+    email_submit: 0,
+    email: ""
+  };
+
+  fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    mode: "no-cors",
+    body: JSON.stringify(data)
+  });
+}
+
+sendLandingTest();
+  
 if (cond === "Fusion") {
   imgEl.src = "img/ad_fusion.png";
 } else if (cond === "Juxtapose") {
