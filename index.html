@@ -436,7 +436,7 @@ document.getElementById("emailForm").addEventListener("submit", function(e){
   const payload = buildData(1, emailVal);
   fetch(APPS_SCRIPT_URL, {method:"POST", mode:"no-cors", body: JSON.stringify(payload)});
   emailInput.value = "";
-  alert("感谢您的反馈！");
+  alert("Thank you for your submission.");
 })
 </script>
 
