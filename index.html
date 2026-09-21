@@ -319,27 +319,18 @@
   </div>
 </footer>
 <script>
-document.getElementById("emailForm").addEventListener("submit", function(e){
-  e.preventDefault();
-  const email = document.getElementById("email").value.trim();
-  if(!email) return;
-  document.getElementById("status").textContent = "Thanks — we'll keep you posted.";
-  this.reset();
-});
-
-// ======追加cond切换图片逻辑（本地可用）======
+// 全局只生成一次SESSION_ID，着陆、表单提交共用
 const params = new URLSearchParams(window.location.search);
 const cond = params.get("cond") || "default";
 const imgEl = document.getElementById("adImage");
-
 const SESSION_ID =
   crypto.randomUUID
     ? crypto.randomUUID()
     : Date.now().toString(36) + Math.random().toString(36).slice(2);
-
 const APPS_SCRIPT_URL =
   "https://script.google.com/macros/s/AKfycbw9nRJL5FZgdSU0lo55x_HOs_8KiDTVVBfmnqk8SzaBkW5SapBRHsAV5mQPPEUrTUQ/exec";
 
+// 页面打开：着陆记录 email_submit=0
 function sendLandingTest() {
   const data = {
     session_id: SESSION_ID,
@@ -353,16 +344,43 @@ function sendLandingTest() {
     email_submit: 0,
     email: ""
   };
-
   fetch(APPS_SCRIPT_URL, {
     method: "POST",
     mode: "no-cors",
     body: JSON.stringify(data)
   });
 }
-
 sendLandingTest();
-  
+
+// 表单提交：email_submit=1，复用同一个SESSION_ID
+document.getElementById("emailForm").addEventListener("submit", function(e){
+  e.preventDefault();
+  const email = document.getElementById("email").value.trim();
+  if(!email) return;
+
+  const data = {
+    session_id: SESSION_ID,
+    condition: cond,
+    landing_time: new Date().toISOString(),
+    device_type: /Mobi|Android/i.test(navigator.userAgent)
+      ? "Mobile"
+      : "Desktop",
+    browser: navigator.userAgent,
+    language: navigator.language,
+    email_submit: 1,
+    email: email
+  };
+  fetch(APPS_SCRIPT_URL, {
+    method: "POST",
+    mode: "no-cors",
+    body: JSON.stringify(data)
+  });
+
+  document.getElementById("status").textContent = "Thanks — we'll keep you posted.";
+  this.reset();
+});
+
+// 条件图片切换
 if (cond === "Fusion") {
   imgEl.src = "img/ad_fusion.png";
 } else if (cond === "Juxtapose") {
