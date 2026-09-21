@@ -17,6 +17,9 @@
   }
   *{box-sizing:border-box}
   html{scroll-behavior:smooth}
+  html,body {
+    overflow-x: hidden;
+  }
   body{
     margin:0;
     background:var(--cream);
@@ -88,7 +91,6 @@
   font-style:italic;
   font-weight:800;
   text-shadow:1px 1px 0 rgba(40,67,70,.08);
-  white-space: nowrap;
 }
   .feature{
     position:relative;
@@ -121,7 +123,6 @@
   background:#eef2ef;
   margin-top:-10px;
 }
-
 .interest-inner{
   max-width:var(--max);
   margin:auto;
@@ -216,7 +217,7 @@
       padding:28px 20px 60px;
       gap:15px;
     }
-    .visual{height:auto;max-height:560px}
+    .visual{height:auto;max-height:560px;margin-left:0;}
     .copy{padding:0}
     h1{font-size:50px;margin-bottom:35px}
     .interest-inner{
@@ -243,7 +244,6 @@
     padding-left:42px;
     padding-right:42px;
   }
-
   .visual{
     margin-left:-8%;
   }
