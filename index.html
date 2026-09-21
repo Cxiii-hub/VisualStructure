@@ -321,7 +321,7 @@
 <script>
 // 全局只生成一次SESSION_ID，着陆、表单提交共用
 const params = new URLSearchParams(window.location.search);
-const cond = params.get("cond") || "default";
+const cond = params.get("cond");
 const imgEl = document.getElementById("adImage");
 const SESSION_ID =
   crypto.randomUUID
@@ -383,7 +383,6 @@ document.getElementById("emailForm").addEventListener("submit", function(e){
 });
 
 // ============ 注释图片切换，消除JS报错，等图片就绪再启用 ============
-/*
 if (cond === "Fusion") {
   imgEl.src = "img/ad_fusion.png";
 } else if (cond === "Juxtapose") {
@@ -393,7 +392,6 @@ if (cond === "Fusion") {
 } else {
   imgEl.src = "umbrella-product.png";
 }
-*/
 </script>
 </body>
 </html>
