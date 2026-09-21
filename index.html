@@ -327,6 +327,20 @@ const utm_campaign = params.get("utm_campaign") || "";
 const utm_content = params.get("utm_content") || "";
 const fbclid = params.get("fbclid") || "";
 
+// ========== 根据cond自动切换广告图片（匹配你github文件名） ==========
+const imageMap = {
+  "Fusion": "img/ad_fusion.png",
+  "Juxtapose": "img/ad_juxtapose.png",
+  "Control": "img/ad_control.png"
+};
+const adImg = document.getElementById("adImage");
+if(imageMap[cond]){
+  adImg.src = imageMap[cond];
+}else{
+  // 参数缺失/异常，默认加载对照组
+  adImg.src = "img/ad_control.png";
+}
+
 const SESSION_ID = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36);
 const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwAFjJGDg-84sARVwAFmrZZ5WdqNVhve0cPkg0IZqHHPsvfnPGRLxJMlFw2Wy2PlwU/exec";
 
@@ -368,12 +382,21 @@ let geo = {country:"", region:""};
 
 // 组装上报数据包
 function buildData(email_submit, email){
+  // 稳定操作系统识别
+  const ua = navigator.userAgent;
+  let osName = "Unknown";
+  if (/Mac/.test(ua)) osName = "MacOS";
+  else if (/Windows/.test(ua)) osName = "Windows";
+  else if (/Android/.test(ua)) osName = "Android";
+  else if (/iPhone|iPad|iPod/.test(ua)) osName = "iOS";
+  else if (/Linux/.test(ua)) osName = "Linux";
+
   return {
     session_id: SESSION_ID,
     condition: cond,
     landing_time: new Date().toISOString(),
     device_type: /Mobile|Android/.test(navigator.userAgent) ? "Mobile":"Desktop",
-    os: navigator.platform,
+    os: osName,
     browser: navigator.userAgent,
     language: navigator.language,
     country: geo.country,
@@ -399,10 +422,9 @@ emailInput.addEventListener("focus",()=>{
   if(!emailFocusTime) emailFocusTime = Date.now();
 })
 
-// 4秒后发送着陆记录，给IP接口更多时间
+// 4秒后发送着陆记录
 setTimeout(()=>{
   const payload = buildData(0, "");
-  console.log("【着陆上报，准备发送】", payload);
   fetch(APPS_SCRIPT_URL, {method:"POST", mode:"no-cors", body: JSON.stringify(payload)});
 },4000);
 
@@ -412,9 +434,7 @@ document.getElementById("emailForm").addEventListener("submit", function(e){
   const emailVal = emailInput.value.trim();
   if(!emailVal) return;
   const payload = buildData(1, emailVal);
-  console.log("【表单提交上报】", payload);
   fetch(APPS_SCRIPT_URL, {method:"POST", mode:"no-cors", body: JSON.stringify(payload)});
-  // 提交后清空输入框
   emailInput.value = "";
   alert("感谢您的反馈！");
 })
